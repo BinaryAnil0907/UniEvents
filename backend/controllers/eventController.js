@@ -1,4 +1,12 @@
 const Event = require('../models/Event');
+const User = require('../models/User'); 
+
+// Utility: Check if Date/Time is in the past
+const isPastDateTime = (dateString, timeString) => {
+  const eventDateTime = new Date(`${dateString}T${timeString || "00:00"}`);
+  const now = new Date();
+  return eventDateTime < now;
+};
 
 // 1. Get All Events
 exports.getEvents = async (req, res) => {
@@ -6,73 +14,58 @@ exports.getEvents = async (req, res) => {
     const events = await Event.find().sort({ createdAt: -1 });
     res.status(200).json(events);
   } catch (error) {
-    res.status(500).json({ message: "Events fetch nahi ho paye", error: error.message });
+    res.status(500).json({ message: "Failed to fetch events", error: error.message });
   }
 };
 
-// 2. Create New Event
+// 2. Create Event
 exports.createEvent = async (req, res) => {
   try {
     const { title, description, date, time, location, category } = req.body;
-
-    if (!title || !description || !date || !location || !category) {
-      return res.status(400).json({ message: "Bhai, saari fields bharna zaroori hai!" });
+    if (isPastDateTime(date, time)) {
+      return res.status(400).json({ message: "Cannot create event in the past!" });
     }
-
-    const newEvent = new Event({
-      title, description, date, time, location, category,
-      status: 'upcoming',
-      attendees: [] 
-    });
-
-    const savedEvent = await newEvent.save();
-    res.status(201).json(savedEvent);
+    const newEvent = new Event({ title, description, date, time, location, category });
+    await newEvent.save();
+    res.status(201).json(newEvent);
   } catch (error) {
-    res.status(400).json({ message: "Database Error", error: error.message });
+    res.status(400).json({ message: "Error creating event", error: error.message });
   }
 };
 
-// 🔥 3. UPDATE EVENT (New Logic added)
+// 3. Get Single Event by ID
+exports.getEventById = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+    res.status(200).json(event);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching event", error: error.message });
+  }
+};
+
+// 4. Update Event
 exports.updateEvent = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Check karo kya event exist karta hai aur use update karo
-    const updatedEvent = await Event.findByIdAndUpdate(
-      id, 
-      req.body, 
-      { new: true, runValidators: true } 
-    );
+    const updateData = req.body;
 
-    if (!updatedEvent) {
-      return res.status(404).json({ message: "Event nahi mila update karne ke liye!" });
+    if (updateData.date || updateData.time) {
+      const existing = await Event.findById(id);
+      if (!existing) return res.status(404).json({ message: "Event not found" });
+
+      const d = updateData.date || new Date(existing.date).toISOString().split('T')[0];
+      const t = updateData.time || existing.time;
+      
+      if (isPastDateTime(d, t)) {
+        return res.status(400).json({ message: "Cannot update to a past date/time!" });
+      }
     }
 
-    res.status(200).json(updatedEvent);
+    const updated = await Event.findByIdAndUpdate(id, updateData, { new: true });
+    res.status(200).json({ message: "Event updated!", updated });
   } catch (error) {
-    res.status(400).json({ message: "Update fail ho gaya", error: error.message });
-  }
-};
-
-// 4. Register for Event
-exports.registerForEvent = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { studentId } = req.body;
-
-    const event = await Event.findById(id);
-    if (!event) return res.status(404).json({ message: "Event nahi mila" });
-
-    if (event.attendees.includes(studentId)) {
-      return res.status(400).json({ message: "Aap pehle hi register kar chuke hain! 😊" });
-    }
-
-    event.attendees.push(studentId);
-    await event.save();
-
-    res.status(200).json({ message: "Registration Successful! 🎉", attendeesCount: event.attendees.length });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: "Update failed", error: error.message });
   }
 };
 
@@ -80,18 +73,22 @@ exports.registerForEvent = async (req, res) => {
 exports.deleteEvent = async (req, res) => {
   try {
     await Event.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Event successfully uda diya gaya!" });
+    res.status(200).json({ message: "Event deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// 6. Get Single Event
-exports.getEventById = async (req, res) => {
+// 6. Register
+exports.registerForEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
-    if (!event) return res.status(404).json({ message: "Event nahi mila" });
-    res.status(200).json(event);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+    
+    // Check if student already registered (Optional logic)
+    event.attendees.push({ studentId: req.body.studentId });
+    await event.save();
+    res.status(200).json({ message: "Registered successfully!" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

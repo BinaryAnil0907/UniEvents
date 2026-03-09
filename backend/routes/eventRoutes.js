@@ -15,6 +15,7 @@ router.post('/', createEvent);
 router.get('/:id', getEventById);
 router.delete('/:id', deleteEvent);
 
+
 // 🔥 Update/Edit ka rasta
 router.put('/:id', updateEvent); // ✅ Ye missing tha, isliye 404 aa raha tha
 
