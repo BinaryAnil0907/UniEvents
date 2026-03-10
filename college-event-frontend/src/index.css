@@ -1,1 +1,38 @@
 @import "tailwindcss";
+
+@theme {
+  /* Custom colors if you want to tweak them */
+  --color-brand-blue: #2563eb;
+  --color-dark-bg: #020617;
+  
+  /* Animations */
+  --animate-float: float 3s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+}
+
+/* 🌓 Dark Mode Variant for v4 */
+/* Ye line sabse zaroori hai dark mode button chalane ke liye */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Standard CSS Resets */
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Smooth transitions for dark mode switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 300ms;
+}

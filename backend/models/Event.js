@@ -7,7 +7,6 @@ const eventSchema = new mongoose.Schema({
   time: { type: String, required: true },
   location: { type: String, required: true },
   category: { type: String, required: true },
-  // ✅ FIX: Number ki jagah Array kiya taaki IDs save ho sakein
   attendees: { 
     type: [mongoose.Schema.Types.ObjectId], 
     ref: 'User',
@@ -17,4 +16,4 @@ const eventSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Event', eventSchema);
+module.exports = mongoose.model('Event', eventSchema);    

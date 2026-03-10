@@ -1,7 +1,7 @@
 const Event = require('../models/Event');
 const User = require('../models/User'); 
 
-// Utility: Check if Date/Time is in the past
+// Utility: Check if Date/Time is in past
 const isPastDateTime = (dateString, timeString) => {
   const eventDateTime = new Date(`${dateString}T${timeString || "00:00"}`);
   const now = new Date();
@@ -18,78 +18,58 @@ exports.getEvents = async (req, res) => {
   }
 };
 
-// 2. Create Event
+// 2. Create New Event
 exports.createEvent = async (req, res) => {
   try {
     const { title, description, date, time, location, category } = req.body;
-    if (isPastDateTime(date, time)) {
-      return res.status(400).json({ message: "Cannot create event in the past!" });
-    }
+    if (isPastDateTime(date, time)) return res.status(400).json({ message: "Past date not allowed!" });
     const newEvent = new Event({ title, description, date, time, location, category });
     await newEvent.save();
     res.status(201).json(newEvent);
-  } catch (error) {
-    res.status(400).json({ message: "Error creating event", error: error.message });
-  }
+  } catch (error) { res.status(400).json({ message: error.message }); }
 };
 
-// 3. Get Single Event by ID
-exports.getEventById = async (req, res) => {
-  try {
-    const event = await Event.findById(req.params.id);
-    if (!event) return res.status(404).json({ message: "Event not found" });
-    res.status(200).json(event);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching event", error: error.message });
-  }
-};
-
-// 4. Update Event
+// 3. Update Event
 exports.updateEvent = async (req, res) => {
   try {
+    const updated = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.status(200).json(updated);
+  } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+// 4. Register for Event (FIXED)
+exports.registerForEvent = async (req, res) => {
+  try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { studentId } = req.body;
+    const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
 
-    if (updateData.date || updateData.time) {
-      const existing = await Event.findById(id);
-      if (!existing) return res.status(404).json({ message: "Event not found" });
-
-      const d = updateData.date || new Date(existing.date).toISOString().split('T')[0];
-      const t = updateData.time || existing.time;
-      
-      if (isPastDateTime(d, t)) {
-        return res.status(400).json({ message: "Cannot update to a past date/time!" });
-      }
+    // Seedha array mein ID check karo
+    if (event.attendees.includes(studentId)) {
+      return res.status(400).json({ message: "Already registered! 😊" });
     }
 
-    const updated = await Event.findByIdAndUpdate(id, updateData, { new: true });
-    res.status(200).json({ message: "Event updated!", updated });
-  } catch (error) {
-    res.status(400).json({ message: "Update failed", error: error.message });
-  }
+    event.attendees.push(studentId); 
+    await event.save();
+    res.status(200).json({ message: "Registration Successful!" });
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 // 5. Delete Event
 exports.deleteEvent = async (req, res) => {
   try {
     await Event.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Event deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    res.status(200).json({ message: "Deleted!" });
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// 6. Register
-exports.registerForEvent = async (req, res) => {
+// 6. Get Single Event (FIXED for View Participants)
+exports.getEventById = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id);
-    if (!event) return res.status(404).json({ message: "Event not found" });
-    
-    // Check if student already registered (Optional logic)
-    event.attendees.push({ studentId: req.body.studentId });
-    await event.save();
-    res.status(200).json({ message: "Registered successfully!" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    // ✅ attendees array ko seedha populate karo
+    const event = await Event.findById(req.params.id).populate('attendees', 'fullName email division rollNo');
+    if (!event) return res.status(404).json({ message: "Not found" });
+    res.status(200).json(event);
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };

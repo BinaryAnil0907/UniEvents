@@ -2,10 +2,21 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// 1. Register Logic
 exports.registerUser = async (req, res) => {
   try {
-    const { fullName, email, password, department, year, role } = req.body;
+    const { fullName, email, password, department, year, division, rollNo, role } = req.body;
+
+    // 🔥 BACKEND VALIDATIONS
+    const divNormal = division ? division.toUpperCase() : '';
+    const validDivs = ['A', 'B', 'C', 'D'];
+    if (!validDivs.includes(divNormal)) {
+      return res.status(400).json({ message: "Invalid Division! Choose between A and D." });
+    }
+
+    const rollInt = parseInt(rollNo);
+    if (isNaN(rollInt) || rollInt < 1 || rollInt > 100) {
+      return res.status(400).json({ message: "Invalid Roll No! Enter between 1 and 100." });
+    }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -21,7 +32,9 @@ exports.registerUser = async (req, res) => {
       password: hashedPassword,
       department,
       year,
-      role: role || 'student' // Default role student rahega
+      division: divNormal, 
+      rollNo: rollInt,   
+      role: role || 'student'
     });
 
     res.status(201).json({
@@ -35,28 +48,18 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// 2. Login Logic (Updated with Role)
+// Login User (Same logic)
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid Email or Password" });
-    }
+    if (!user) return res.status(400).json({ message: "Invalid Email or Password" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid Email or Password" });
-    }
+    if (!isMatch) return res.status(400).json({ message: "Invalid Email or Password" });
 
-    const token = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1d' }
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-    // ✅ Sending full user object including ROLE
     res.json({
       success: true,
       token,
@@ -64,10 +67,9 @@ exports.loginUser = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        role: user.role // 👈 This was missing
+        role: user.role 
       }
     });
-
   } catch (error) {
     res.status(500).json({ message: "Server Error: " + error.message });
   }
