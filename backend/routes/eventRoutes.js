@@ -5,8 +5,9 @@ const {
   createEvent, 
   deleteEvent, 
   getEventById, 
-  updateEvent,    // ✅ Added this
-  registerForEvent 
+  updateEvent, 
+  registerForEvent,
+  cancelRegistration // ✅ Ye naya controller import karna hoga
 } = require('../controllers/eventController');
 
 // Saare Raste (Routes)
@@ -15,11 +16,11 @@ router.post('/', createEvent);
 router.get('/:id', getEventById);
 router.delete('/:id', deleteEvent);
 
-
 // 🔥 Update/Edit ka rasta
-router.put('/:id', updateEvent); // ✅ Ye missing tha, isliye 404 aa raha tha
+router.put('/:id', updateEvent); 
 
-// Registration ka rasta
+// Registration aur Cancellation ke raste
 router.post('/:id/register', registerForEvent);
+router.post('/:id/cancel', cancelRegistration); // ✅ Cancel ka rasta add ho gaya
 
 module.exports = router;

@@ -56,7 +56,28 @@ exports.registerForEvent = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// 5. Delete Event
+// 🔥 5. Cancel Registration (NEWLY ADDED)
+exports.cancelRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { studentId } = req.body;
+    
+    const event = await Event.findById(id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    // Filter out the student from attendees list
+    event.attendees = event.attendees.filter(
+      (attendee) => attendee.toString() !== studentId
+    );
+    
+    await event.save();
+    res.status(200).json({ message: "Registration Cancelled! ❌" });
+  } catch (error) { 
+    res.status(500).json({ message: error.message }); 
+  }
+};
+
+// 6. Delete Event
 exports.deleteEvent = async (req, res) => {
   try {
     await Event.findByIdAndDelete(req.params.id);
@@ -64,7 +85,7 @@ exports.deleteEvent = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// 6. Get Single Event (FIXED for View Participants)
+// 7. Get Single Event (FIXED for View Participants)
 exports.getEventById = async (req, res) => {
   try {
     // ✅ attendees array ko seedha populate karo
