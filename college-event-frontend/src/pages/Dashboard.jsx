@@ -3,7 +3,7 @@ import axios from "axios";
 import {
   LayoutDashboard, Calendar, User, LogOut, Menu, X,
   MapPin, Clock, Users, Bell, Search, Sparkles, 
-  BookmarkCheck, ArrowUpRight, Sun, Moon, CheckCircle2
+  BookmarkCheck, Sun, Moon, CheckCircle2, XCircle, AlignLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -55,6 +55,16 @@ const Dashboard = () => {
     } catch (err) { alert(err.response?.data?.message || "Registration failed!"); }
   };
 
+  const handleCancelRegistration = async (eventId) => {
+    if(!window.confirm("Are you sure you want to cancel your registration?")) return;
+    try {
+      const studentId = user.id || user._id;
+      const res = await axios.post(`http://localhost:5000/api/events/${eventId}/cancel`, { studentId });
+      alert(res.data.message || "Registration Cancelled! ❌");
+      fetchEvents(); 
+    } catch (err) { alert(err.response?.data?.message || "Cancellation failed!"); }
+  };
+
   const handleLogout = () => { localStorage.clear(); navigate("/login"); };
 
   const filteredEvents = events.filter(e => 
@@ -74,10 +84,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex font-sans transition-colors duration-500">
       
-      {/* 🟢 Sidebar: Hero Gradient Style */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 p-6 transition-transform duration-300 lg:translate-x-0 lg:static ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-full bg-gradient-to-b from-blue-600 to-indigo-700 rounded-[2.5rem] shadow-2xl flex flex-col p-8 text-white relative overflow-hidden">
-          {/* Subtle decoration for sidebar */}
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
           
           <div className="flex items-center gap-3 mb-12 relative z-10">
@@ -104,10 +112,8 @@ const Dashboard = () => {
         </div>
       </aside>
 
-      {/* 🔵 Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 p-4 lg:p-8">
         
-        {/* Top Header */}
         <header className="flex justify-between items-center mb-10 px-4">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
@@ -132,7 +138,6 @@ const Dashboard = () => {
           </div>
         </header>
 
-        {/* Hero Banner */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[3rem] p-10 mb-12 text-white relative overflow-hidden shadow-2xl shadow-blue-200 dark:shadow-none">
           <div className="relative z-10 max-w-lg">
              <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none mb-4 italic uppercase">
@@ -144,7 +149,6 @@ const Dashboard = () => {
           <Sparkles className="absolute right-10 top-10 w-32 h-32 text-white/10 rotate-12" />
         </div>
 
-        {/* Events Grid */}
         <div className="flex-1 overflow-y-auto px-2 pb-10 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {displayEvents.length > 0 ? (
@@ -155,33 +159,49 @@ const Dashboard = () => {
                     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] p-7 relative h-full flex flex-col">
                       <div className="flex justify-between items-start mb-6">
                         <span className="bg-blue-600 text-white text-[9px] font-black px-4 py-1.5 rounded-xl uppercase tracking-widest">{event.category}</span>
-                        <div className="text-slate-400 group-hover:text-blue-600 transition-colors"><ArrowUpRight size={18} /></div>
                       </div>
                       
                       <h4 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter leading-tight italic uppercase truncate">
                         {event.title}
                       </h4>
+
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-tight mb-4 flex items-start gap-2 line-clamp-2">
+                         <AlignLeft size={14} className="text-blue-600 mt-0.5" /> {event.description || "No description available."}
+                      </p>
+
                       <div className="space-y-2 mb-8 font-bold text-slate-500 dark:text-slate-400 text-sm">
                         <p className="flex items-center gap-2"><MapPin size={16} className="text-blue-600"/> {event.location}</p>
                         <p className="flex items-center gap-2"><Clock size={16} className="text-blue-600"/> {event.date}</p>
                         <p className="flex items-center gap-2"><Users size={16} className="text-blue-600"/> {event.attendees?.length || 0} attending</p>
                       </div>
 
-                      <button
-                        onClick={() => handleRegister(event._id)}
-                        disabled={isRegistered}
-                        className={`mt-auto w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all transform active:scale-95 flex items-center justify-center gap-2 ${
-                          isRegistered 
-                          ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" 
-                          : "bg-slate-900 text-white shadow-lg hover:bg-blue-600"
-                        }`}
-                      >
-                        {isRegistered ? (
-                          <>already joined <CheckCircle2 size={16} /></>
-                        ) : (
-                          "Join Event 🚀"
+                      <div className="mt-auto space-y-3">
+                        <button
+                          onClick={() => handleRegister(event._id)}
+                          disabled={isRegistered}
+                          className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all transform active:scale-95 flex items-center justify-center gap-2 ${
+                            isRegistered 
+                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" 
+                            : "bg-slate-900 text-white shadow-lg hover:bg-blue-600"
+                          }`}
+                        >
+                          {isRegistered ? (
+                            <>already joined <CheckCircle2 size={16} /></>
+                          ) : (
+                            "Join Event 🚀"
+                          )}
+                        </button>
+
+                        {isRegistered && (
+                          <button 
+                            onClick={() => handleCancelRegistration(event._id)}
+                            className="group/cancel w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-red-500 border border-red-100 dark:border-red-900/30 hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-200 dark:hover:shadow-none transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+                          >
+                            Cancel Participation 
+                            <XCircle size={14} className="group-hover/cancel:rotate-90 transition-transform duration-300" />
+                          </button>
                         )}
-                      </button>
+                      </div>
                     </div>
                   </div>
                 );
