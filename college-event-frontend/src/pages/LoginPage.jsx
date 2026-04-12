@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, LayoutDashboard, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Users, LayoutDashboard, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -18,26 +18,20 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // API call (Humein sirf email/password bhejna hai, role hum yahan check karenge)
       const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-      
       const loggedInUser = res.data.user;
 
-      // 🔥 ROLE SECURITY CHECK:
-      // Agar DB ka role aur toggle wala role match nahi karte toh error dikhao
       if (loggedInUser.role.toLowerCase() !== role.toLowerCase()) {
-        alert(`Access Denied! Aapka account as a "${loggedInUser.role}" registered hai. Please sahi switch select karein.`);
+        alert(`Access Denied! Your account is registered as a "${loggedInUser.role}". Please select the correct role.`);
         setLoading(false);
         return;
       }
 
-      // Token aur User save karo
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(loggedInUser));
 
       alert(`${role.charAt(0).toUpperCase() + role.slice(1)} Login Successful! 🎉`);
       
-      // Redirect logic
       if (loggedInUser.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
@@ -53,6 +47,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex">
+      {/* Left Panel */}
       <div className={`hidden lg:flex w-1/2 items-center justify-center relative transition-colors duration-500 ${role === 'admin' ? 'bg-indigo-900' : 'bg-blue-900'}`}>
         <div className="z-10 text-center px-10">
           <h1 className="text-5xl font-bold text-white mb-4">UniEvents Portal</h1>
@@ -61,8 +56,19 @@ const LoginPage = () => {
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
       </div>
 
+      {/* Right Panel */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md relative">
+          
+          {/* 🔙 Back to Register Option */}
+          <button 
+            onClick={() => navigate('/register')} 
+            className="flex items-center gap-2 text-slate-400 hover:text-slate-600 font-bold text-sm mb-8 transition-colors group"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            Back to Registration
+          </button>
+
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Sign In</h2>
           <p className="text-slate-500 mb-8 font-medium">Access your <span className={accentText}>{role}</span> dashboard</p>
 
@@ -99,6 +105,11 @@ const LoginPage = () => {
               {loading ? "Verifying..." : `Login as ${role === 'admin' ? 'Administrator' : 'Student'}`}
             </button>
           </form>
+
+          {/* Optional: Simple Link at bottom if they don't see the top button */}
+          <p className="text-center mt-8 text-slate-500 text-sm font-medium">
+            Don't have an account? <Link to="/register" className={`${accentText} font-bold hover:underline`}>Register now</Link>
+          </p>
         </div>
       </div>
     </div>
